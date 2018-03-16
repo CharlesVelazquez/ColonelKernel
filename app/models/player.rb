@@ -1,4 +1,4 @@
 class Player < ApplicationRecord
 	belongs_to :user
-	has_one :room
+	belongs_to :room
 end

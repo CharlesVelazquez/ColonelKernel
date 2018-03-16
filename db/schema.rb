@@ -13,33 +13,25 @@
 ActiveRecord::Schema.define(version: 20180315140734) do
 
   create_table "players", force: :cascade do |t|
-    t.integer "style"
-    t.integer "room"
-    t.float "K_D"
+    t.float "x_location"
+    t.float "y_location"
+    t.integer "room_id"
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["user_id"], name: "index_players_on_user_id"
   end
 
   create_table "rooms", force: :cascade do |t|
     t.integer "capacity"
-    t.integer "player_id"
-    t.index ["player_id"], name: "index_rooms_on_player_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "users", force: :cascade do |t|
     t.string "name"
     t.string "email"
-    t.string "password_digest"
-    t.string "remember_digest"
-    t.boolean "admin", default: false
-    t.string "activation_digest"
-    t.boolean "activated", default: false
-    t.datetime "activated_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["email"], name: "index_users_on_email", unique: true
   end
 
 end

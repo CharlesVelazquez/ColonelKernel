@@ -3,6 +3,7 @@ class UsersController < ApplicationController
   before_action :correct_user,   only: [:edit, :update]
   before_action :admin_user, only: :destroy #Wanted to keep attackers from deleting users from the cmd lines
 
+
    def index
     @users = User.all
   end
@@ -21,7 +22,7 @@ class UsersController < ApplicationController
     if @user.save
       # @user.send_activation_email (*Email not ready yet)
       # UserMailer.account_activation(@user).deliver_now (*Email not ready yet)
-      flash[:info] = "Please check your email to activate your account."
+      # flash[:info] = "Please check your email to activate your account."
       redirect_to root_url
     else
       render 'new'

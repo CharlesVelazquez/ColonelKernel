@@ -1,10 +1,10 @@
 class CreatePlayers < ActiveRecord::Migration[5.1]
   def change
     create_table :players do |t|
-      t.integer :style
-      t.integer :room
-      t.float :K_D
-      t.belongs_to :user, index: true
+      t.float :x_location
+      t.float :y_location
+      t.integer :room_id
+      t.integer :user_id
       t.timestamps
     end
   end
