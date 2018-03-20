@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Pop Pop Game</title>
+    <%= csrf_meta_tags %>
+
+    <!-- for unique other tags -->
+    <%= content_for?(:head) ? yield(:head) : "" %>
+
+    <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+    <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
+  </head>
+
+  <body style="margin: 0">
+    
+    <div class="main">
+      <%= yield %>
+      
+    </div>
+
+    <div class="nav">
+      <% if current_user %>
+        Signed in as <%= current_user.name %> | <%= link_to "Logout", '/logout' %>
+      <% else %>
+        <%= link_to 'Login', '/login' %> | <%= link_to 'Signup', '/signup' %>
+      <% end %>
+    </div>
+
+  </body>
+
+
+
+</html>

@@ -1,0 +1,18 @@
+<% content_for :head do %>
+  <meta name="roomnumber" content="<%= params[:id]%>" />
+  <meta name="usernumber" content="<%= current_user.id %>" />
+<% end %>
+
+<div class="room" id="room"> <!-- wrapper div -->
+
+  
+  <div id="p5_loading" class="loadingclass">
+      This is where canvas & p5.js graphics load if they work<br>
+      Please use a compatible browser if they do not load <br>
+      or check your extensions / add-ons for incompatibility
+  </div>
+
+  <script src="/assets/libs/p5.js"></script>
+  <script src="/assets/game.js"></script>
+
+</div>
