@@ -2,6 +2,8 @@
 
 const ROOM_NUMBER = parseInt(document.querySelectorAll('meta[name="roomnumber"]')[0].content);
 const USER_NUMBER = parseInt(document.querySelectorAll('meta[name="usernumber"]')[0].content);
+const PORT_NUMBER = ':3000';
+const URL = window.location.hostname;
 
 const FRAME_RATE = 60; // frame rate for game/rendering loop
 
@@ -321,7 +323,7 @@ class Pop {
   }
 } 
 
-// main helper functions
+// ********** helper drawing functions *************
 
 function drawMap () {
   // draw tiles
@@ -563,7 +565,9 @@ function drawKernels () {
   });
 }
 
-function interpolate(inI, inF, inPosition, inCutOff = true) {
+// ********** helper math functions *************
+
+function interpolate (inI, inF, inPosition, inCutOff = true) {
   // inI - initial value
   // inF - final value
   // inPosition 0-1 float for where
@@ -589,13 +593,13 @@ function interpolate(inI, inF, inPosition, inCutOff = true) {
 // ********************************************
 
 // p5.js: runs before
-function preload() {
+function preload () {
   // this preloads before the rest
   // img = loadImage('cat.jpg');
 }
 
 // p5.js: runs once
-function setup() {
+function setup () {
 
   getGameStateInitial();
   
@@ -603,7 +607,7 @@ function setup() {
 
 // p5.js: runs in a loop
 // used for game loop
-function draw() {
+function draw () {
 
   if (game? game.isReady : false) {
     // console.log(game);
@@ -751,7 +755,8 @@ function getGameState () {
 function getGameStateTest () {
   // console.log('getGameState() ran');
 
-  let url = 'http://localhost:3000/rooms_api/1';
+  // let url = 'http://localhost:3000/rooms_api/1';
+  let url = '/rooms_api/1'
 
   fetch(url)
   .then(res => res.json())
@@ -763,7 +768,7 @@ function getGameStateTest () {
   }); // throw err
 }
 
-function sendGameState() {
+function sendGameState () {
   
   game.checkKeys(); // get player input & update data
 
@@ -777,8 +782,9 @@ function sendGameState() {
   // console.log('sent: ', dataForSending);
 
  
+  
 
-  $.ajax({ url: 'http://localhost:3000/rooms_api/1',
+  $.ajax({ url: '/rooms_api/1',
     type: 'POST',
     headers: { 'X-CSRF-Token': Rails.csrfToken() },
     data: dataForSending,
@@ -799,7 +805,7 @@ function sendGameState() {
  
 }
 
-function mousePressed() {
+function mousePressed () {
   // testing only
   // getGameState();
   // sendGameState();
