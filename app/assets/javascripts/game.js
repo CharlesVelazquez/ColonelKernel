@@ -469,16 +469,14 @@ function drawPlayers () {
       );
     } else {
       textAlign(CENTER);
-      stroke(255, 125);
-      fill(color(ea_player.style.R, ea_player.style.G, ea_player.style.B, 125))
+      stroke(0, 255);
+      fill(color(ea_player.style.R, ea_player.style.G, ea_player.style.B, 255))
       strokeWeight(game.mapScale / 32)
-      textSize(0.3 * game.mapScale);
+      textSize(0.5 * game.mapScale);
       text(
         'REKT', 
-        ea_player.X, 
-        ea_player.Y, 
-        1 * game.mapScale, 
-        0.3 * game.mapScale
+        ea_player.X * game.mapScale, 
+        ea_player.Y * game.mapScale
       );
     }
   });

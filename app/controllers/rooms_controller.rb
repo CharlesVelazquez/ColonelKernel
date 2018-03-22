@@ -214,8 +214,8 @@ class RoomsController < ApplicationController
         
         # calculate squares affected
         # act on players
-        thing_x = ea_thing.game_x.floor.to_i.dup
-        thing_y = ea_thing.game_y.floor.to_i.dup
+        thing_x = ea_thing.game_x.floor.to_i
+        thing_y = ea_thing.game_y.floor.to_i
 
         # puts "1*********************************"
         # p player_map
@@ -223,9 +223,9 @@ class RoomsController < ApplicationController
         # (to do) all this needs to be moved out
 
         # left check
-        search_range = ea_thing.strength.dup
-        search_x = thing_x.dup
-        search_y = thing_y.dup
+        search_range = ea_thing.strength
+        search_x = thing_x
+        search_y = thing_y
         loop do
           break if (search_range < 0)                   # exhaustion of range
           break if (search_x < 0)                       # out of bounds
@@ -247,9 +247,9 @@ class RoomsController < ApplicationController
         # p player_map
 
         # right check
-        search_range = ea_thing.strength.dup
-        search_x = thing_x.dup
-        search_y = thing_y.dup
+        search_range = ea_thing.strength
+        search_x = thing_x
+        search_y = thing_y
         loop do
           break if (search_range < 0)                   # exhaustion of range
           break if (search_x >= this_map_max_x)                       # out of bounds
@@ -272,9 +272,9 @@ class RoomsController < ApplicationController
 
 
         # up check
-        search_range = ea_thing.strength.dup
-        search_x = thing_x.dup
-        search_y = thing_y.dup
+        search_range = ea_thing.strength
+        search_x = thing_x
+        search_y = thing_y
 
         # puts "4*********************************"
         # p player_map
@@ -297,9 +297,9 @@ class RoomsController < ApplicationController
         end
 
         # down check
-        search_range = ea_thing.strength.dup
-        search_x = thing_x.dup
-        search_y = thing_y.dup
+        search_range = ea_thing.strength
+        search_x = thing_x
+        search_y = thing_y
         
         loop do
           break if (search_range < 0)                   # exhaustion of range
