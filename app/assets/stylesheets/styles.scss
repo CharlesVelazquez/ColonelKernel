@@ -6,7 +6,6 @@
 body {
   text-align: center;
   font-family: 'Arimo', sans-serif;
-  overflow: hidden;
   background: rgb(113, 191, 137);
 }
 
@@ -99,4 +98,9 @@ input[type=submit]:active {
 .room {
   border: 1vw solid black;
   display: inline-block;
+  overflow: hidden;
+}
+
+.newRoom {
+  margin-top: 3vw;
 }
