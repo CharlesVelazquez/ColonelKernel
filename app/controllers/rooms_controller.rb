@@ -148,7 +148,7 @@ class RoomsController < ApplicationController
     end
 
     # act on and remove timed out things
-    timeout = 10 # seconds
+    timeout = 60 # seconds
     this_room = Room.find_by_id(params[:id]) # room object
     stored_players = this_room.players.all # array of stored players for this room
     
@@ -161,11 +161,23 @@ class RoomsController < ApplicationController
     # this matrix will have positions of players
     player_map = Array.new(this_map_max_y){Array.new(this_map_max_x, [])}
 
+    # puts "0*********************************"
+    # p player_map
+
     (0..this_map_max_x-1).each do |x|
       (0..this_map_max_y-1).each do |y|
         this_map[x][y] = this_map_basic[y * this_map_max_x + x]
       end
     end
+
+    # puts "1 player_map *********************************"
+    # p player_map
+
+    # puts "this_room.players *********************************"
+    # p this_room.players
+
+    # puts "this_room.players.all *********************************"
+    # p this_room.players.all
 
     # remove timed out players    
 
@@ -177,7 +189,13 @@ class RoomsController < ApplicationController
         # if players still around, help with the map
         player_x_square = ea_player.game_x.floor.to_i
         player_y_square = ea_player.game_y.floor.to_i
-        player_map[player_x_square, player_y_square].push(ea_player.id);
+        player_map[player_x_square][player_y_square].push(ea_player.id);
+
+        # puts "player_x_square *********************************"
+        # p player_x_square
+        # p player_y_square
+        # p player_map
+
         # this forms a 2d map with array of player id's at each square
       end
 
@@ -196,15 +214,18 @@ class RoomsController < ApplicationController
         
         # calculate squares affected
         # act on players
-        thing_x = ea_thing.game_x.floor.to_i
-        thing_y = ea_thing.game_y.floor.to_i
+        thing_x = ea_thing.game_x.floor.to_i.dup
+        thing_y = ea_thing.game_y.floor.to_i.dup
+
+        # puts "1*********************************"
+        # p player_map
 
         # (to do) all this needs to be moved out
 
         # left check
-        search_range = ea_thing.strength
-        search_x = thing_x
-        search_y = thing_y
+        search_range = ea_thing.strength.dup
+        search_x = thing_x.dup
+        search_y = thing_y.dup
         loop do
           break if (search_range < 0)                   # exhaustion of range
           break if (search_x < 0)                       # out of bounds
@@ -222,10 +243,13 @@ class RoomsController < ApplicationController
           search_range = ea_thing.strength - 1
         end
 
+        # puts "2*********************************"
+        # p player_map
+
         # right check
-        search_range = ea_thing.strength
-        search_x = thing_x
-        search_y = thing_y
+        search_range = ea_thing.strength.dup
+        search_x = thing_x.dup
+        search_y = thing_y.dup
         loop do
           break if (search_range < 0)                   # exhaustion of range
           break if (search_x >= this_map_max_x)                       # out of bounds
@@ -243,10 +267,18 @@ class RoomsController < ApplicationController
           search_range = ea_thing.strength - 1
         end
 
+        # puts "3*********************************"
+        # p player_map
+
+
         # up check
-        search_range = ea_thing.strength
-        search_x = thing_x
-        search_y = thing_y
+        search_range = ea_thing.strength.dup
+        search_x = thing_x.dup
+        search_y = thing_y.dup
+
+        # puts "4*********************************"
+        # p player_map
+
         loop do
           break if (search_range < 0)                   # exhaustion of range
           break if (search_y < 0)                       # out of bounds
@@ -265,9 +297,10 @@ class RoomsController < ApplicationController
         end
 
         # down check
-        search_range = ea_thing.strength
-        search_x = thing_x
-        search_y = thing_y
+        search_range = ea_thing.strength.dup
+        search_x = thing_x.dup
+        search_y = thing_y.dup
+        
         loop do
           break if (search_range < 0)                   # exhaustion of range
           break if (search_y >= this_map_max_y)                       # out of bounds
