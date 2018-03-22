@@ -1,13 +1,15 @@
-<h1> all rooms </h1>
 
-<% Room.all.reverse.each do |ea_room| %>
-  <div>
-    <a href="/rooms/<%= ea_room.id %>">Room #<%= ea_room.id %></a>
-  </div>
+<div class="listContainer">
+  <% Room.all.reverse.each do |ea_room| %>
+    <div class="roomsList">
+      <a class='rooms' href="/rooms/<%= ea_room.id %>">Room #<%= ea_room.id %></a>
+    </div>
 
-<% end %>
+  <% end %>
+</div>
+
 <div>
   <%# link_to 'New Room', method: :create, controller: :rooms %>
   <%# link_to "New Room", { controller: :rooms, action: :create },  method:"post" %>
-  <%= link_to "New Room", rooms_path, class: "temp", method: :create %>
+  <%= link_to "New Room", rooms_path, class: "temp rooms", method: :create %>
 </div>
