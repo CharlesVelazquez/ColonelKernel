@@ -1,9 +1,9 @@
-<h1>Login</h1>
+
 
 <%= form_tag '/login' do %>
-
-  Name: <%= text_field_tag :name %>
-  Password: <%= password_field_tag :password %>
-  <%= submit_tag "Submit" %>
-
+  <div class="form">
+    <%= text_field_tag :name, params[:name], placeholder: 'Name' %>
+    <%= password_field_tag :password, params[:password], placeholder: 'Password' %><br>
+    <%= submit_tag "Login", :class => 'button' %>
+  </div>
 <% end %>
