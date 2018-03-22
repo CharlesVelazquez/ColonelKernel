@@ -34,10 +34,15 @@ ActiveRecord::Schema.define(version: 20180322062404) do
     t.float "game_x"
     t.float "game_y"
     t.integer "lives"
+    t.integer "popped"
+    t.integer "nonce"
+    t.string "color"
     t.integer "user_id"
     t.integer "room_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["room_id"], name: "index_players_on_room_id"
+    t.index ["user_id"], name: "index_players_on_user_id", unique: true
   end
 
   create_table "rooms", force: :cascade do |t|
@@ -54,11 +59,16 @@ ActiveRecord::Schema.define(version: 20180322062404) do
 
   create_table "things", force: :cascade do |t|
     t.integer "identity"
+    t.float "game_x"
+    t.float "game_y"
+    t.integer "strength"
     t.integer "ms_delay"
-    t.integer "map_id"
+    t.integer "room_id"
     t.integer "player_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["player_id"], name: "index_things_on_player_id"
+    t.index ["room_id"], name: "index_things_on_room_id"
   end
 
   create_table "users", force: :cascade do |t|
