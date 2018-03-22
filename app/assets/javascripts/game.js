@@ -1,13 +1,15 @@
 // ************* constants *************
 
+// grab instance info from rails generated html elements
 const ROOM_NUMBER = parseInt(document.querySelectorAll('meta[name="roomnumber"]')[0].content);
 const USER_NUMBER = parseInt(document.querySelectorAll('meta[name="usernumber"]')[0].content);
-const PORT_NUMBER = ':3000';
-const URL = window.location.hostname;
+
+const PORT_NUMBER = ':3000'; // server port
+const URL = window.location.hostname; // server url
 
 const FRAME_RATE = 60; // frame rate for game/rendering loop
 
-const PLAYER_SPEED = 5 / FRAME_RATE; // how fast player moves
+const PLAYER_SPEED = 1.2 / FRAME_RATE; // how fast player moves
 const POP_PLACE_DELAY = 2000.0; // ms between placing pop corns
 const POP_DELAY = 3000.0; // ms between pop corns popping
 const POPING_LENGTH = 20; // how long poping animation is
@@ -21,6 +23,11 @@ const DIRECTIONS = {
   DOWN: 4,
   ALL: 5
 }; // enums to make directions a bit more readable
+const GAME_ACTIONS = {
+  PLACE_POPCORN: 1,
+  WALL: 2
+}; // enums to make actions a bit more readable
+
 
 // globals
 
@@ -32,8 +39,13 @@ var myPlayerIndex; // keep track of where in player array local player is
 
 class Game {
   constructor (inMap, inMapX, inMapY) {
-    this.players = [];
-    this.kernels = [];
+    this.players = []; // class Player
+    this.kernels = []; // class Kernel
+    this.actionQueue  = []; // class LocalPlayerActions
+    this.things = []; // class Thing
+
+    this.nonce = 1; // keeps track of latest action number to transmit once
+    this.thingNonce = 1;
 
     this.map = inMap;
     this.isReady = false;
@@ -79,16 +91,105 @@ class Game {
     document.addEventListener('keydown', key_down_handler, true);
     function key_down_handler (key_down_event) {
       keyState[key_down_event.keyCode || key_down_event.which] = true;
+      // cross browser comatibility
     }
     document.addEventListener('keyup', key_up_handler, true);
     function key_up_handler (key_up_event) {
       keyState[key_up_event.keyCode || key_up_event.which] = false;
+      // console.log('key up detected');
+      // cross browser comatibility
     }
 
   }
 
-  addPlayer (inPlayerID, inX, inY, isPlayer = false) {
-    this.players.push(new Player(inPlayerID, inX, inY, isPlayer));
+  tryToPlaceKernel (localPlayer) {
+    // check if time since last popcorn placed is long enough
+    let rightNow = (new Date()).getTime();
+    if (rightNow - localPlayer.lastPop > POP_PLACE_DELAY) {
+      
+      // this.placeLocalKernel(localPlayer); // this will have to be done in future from network data
+
+      //  onsole.log(this.kernels); 
+      localPlayer.lastPop = rightNow; // update local timer
+
+      // add Kernel Placement action to queue for transmission
+      // this actually does the action of attacking
+      this.addAction(new LocalPlayerAction(this.nonce++, GAME_ACTIONS.PLACE_POPCORN));
+    }
+  }
+
+  // creates object for animating kernel locally
+  placeLocalKernel (inX, inY, inRange, in_db_id) {
+    // create a new kernel
+    // let lastIndex = this.kernels.push(new Kernel(
+    //   localPlayer.X,
+    //   localPlayer.Y,
+    //   this.xyPositionToMapIndex(
+    //     localPlayer.X,
+    //     localPlayer.Y
+    //   )
+    // ));
+    let lastIndex = this.kernels.push(
+      new Kernel(
+        inX,
+        inY,
+        inRange,
+        in_db_id
+      )
+    ) - 1;
+
+    // update it's X and Y to be at center of tile
+    // this.kernels[lastIndex - 1].setXY({
+    //   X:  this.mapIndexToXYPosition(
+    //         this.kernels[lastIndex - 1].mapIndex
+    //       ).centerX,
+    //   Y:  this.mapIndexToXYPosition(
+    //         this.kernels[lastIndex - 1].mapIndex
+    //       ).centerY
+    // }); 
+
+    this.kernels[lastIndex].setXY({
+      X:  Math.floor(this.kernels[lastIndex].X) + 0.5,
+      Y:  Math.floor(this.kernels[lastIndex].Y) + 0.5
+    }); 
+  }
+
+  addAction (inAction) {
+    // add new action
+
+    this.actionQueue.push(inAction);
+
+  }
+
+  updateActions () {
+    // check which actions need to be removed from queue
+
+    this.actionQueue.forEach((eaAction, eaActionIndex) => {
+      if (eaAction.transmitted) {
+        rmAction(eaActionIndex);
+      }
+    });
+  }
+
+  cleanActions () {
+    // remove all actions
+    this.actionQueue = [];
+  }
+
+  rmAction (inIndex) {
+    this.actionQueue.splice(inIndex, 1);
+  }
+
+  updateMap (inMap) {
+    this.map = inMap;
+  }
+
+  addPlayer (inPlayerID, inX, inY, isLocal = false) {
+    this.players.push(new Player(inPlayerID, inX, inY, isLocal));
+  }
+
+  rmPlayer (inIndex) {
+    this.players.splice(inIndex, 1);
   }
 
   resize (inX, inY) {
@@ -194,72 +295,47 @@ class Game {
   findMe () {
     
     myPlayerIndex = this.players.findIndex((element)=>{
-      // console.log(element.isPlayer);
-      return element.isPlayer;
+      //  onsole.log(element.isLocal);
+      return element.isLocal;
     });
 
     return myPlayerIndex;
   }
 
-  checkKeys () {
+  checkKeysAndUpdateState () {
 
     // let player_id = 0;
     let player_id = this.findMe();
 
     let localPlayer = this.players[player_id];
-    // console.log('player_id', player_id);
-    // console.log('x ', localPlayer.X);
-    // console.log('y', localPlayer.Y);
+    //  onsole.log('player_id', player_id);
+    //  onsole.log('x ', localPlayer.X);
+    //  onsole.log('y', localPlayer.Y);
     
     let isFree = this.safeToTravel(localPlayer.X, localPlayer.Y); // minimize checks
 
-    if (keyState[localPlayer.keys.left] && isFree.left) {
+    if ((keyState[localPlayer.keys.left] || keyState[65]) && isFree.left) {
       localPlayer.X -= PLAYER_SPEED;
     }
-    if (keyState[localPlayer.keys.up] && isFree.up) {
+    if ((keyState[localPlayer.keys.up] || keyState[87]) && isFree.up) {
       localPlayer.Y -= PLAYER_SPEED;
     }
-    if (keyState[localPlayer.keys.right] && isFree.right) {
+    if ((keyState[localPlayer.keys.right] || keyState[68]) && isFree.right) {
       localPlayer.X += PLAYER_SPEED;
     }
-    if (keyState[localPlayer.keys.down] && isFree.down) {
+    if ((keyState[localPlayer.keys.down] || keyState[83]) && isFree.down) {
       localPlayer.Y += PLAYER_SPEED;
     }
-    if (keyState[localPlayer.keys.action]) {
-      // if action key pressed, check if time since last popcorn placed is long enough
-      let rightNow = (new Date()).getTime();
-      if (rightNow - localPlayer.lastPop > POP_PLACE_DELAY) {
-        // create a new kernel
-        let lastIndex = this.kernels.push(new Kernel(
-          localPlayer.X,
-          localPlayer.Y,
-          this.xyPositionToMapIndex(
-            localPlayer.X,
-            localPlayer.Y
-          )
-        ));
-        // update it's X and Y to be at center of tile
-        this.kernels[lastIndex - 1].setXY({
-          X:  this.mapIndexToXYPosition(
-                this.kernels[lastIndex - 1].mapIndex
-              ).centerX,
-          Y:  this.mapIndexToXYPosition(
-                this.kernels[lastIndex - 1].mapIndex
-              ).centerY
-        }); 
-          
-        
-        // console.log(this.kernels); 
-        localPlayer.lastPop = rightNow; // place popcorn
-      }
+    if (keyState[localPlayer.keys.action] || keyState[70]) {
+      game.tryToPlaceKernel(localPlayer);
     }
 
   }
 }
 
 class Player {
-  constructor (inUserId = 1, inPlayerX = 0, inPlayerY = 0, inIsPlayer = false) {
-    this.databaseID = null; // grab database ID when possible
+  constructor (inUserId = 1, inPlayerX = 0, inPlayerY = 0, inIsLocal = false) {
+    this.player_id = null; // grab database ID when possible
     this.userId = inUserId;
     this.X = inPlayerX;
     this.Y = inPlayerY;
@@ -268,7 +344,7 @@ class Player {
       left: 37,  // left arrow
       up: 38, // up arrow
       down: 40, // down arrow
-      action: 191 // forward slash '/'    
+      action: 191 // forward slash '/'
     }
     this.lastPop = 0; // last time pop corn placed
     this.style = {
@@ -276,20 +352,30 @@ class Player {
       G: Math.random() * 255 | 0,
       B: Math.random() * 255 | 0
     }
-    this.isPlayer = inIsPlayer; // is this the local player
+    this.isLocal = inIsLocal; // is this the local player
+  }
+}
+
+class LocalPlayerAction {
+  constructor (inNonce, inType = 1) {
+    this.nonce = inNonce; // number of action
+    this.type = inType;
+    // this.transmitted = false;
   }
 }
 
 class Kernel {
-  constructor (inX, inY, inMapIndex = null, inRange = 2.0) {
+  constructor (inX, inY, inRange = 2.0, in_thing_id = null) {
     // user passes in X, Y, and map index where kernel is    
     this.X = inX; // X location
     this.Y = inY; // Y location
     this.spawnTime = (new Date()).getTime(); // get time of creation
-    this.databaseID = null; // grab database ID for the kernel when possible
-    this.mapIndex = inMapIndex; // grab index on map when possible
+    this.thing_id = in_thing_id; // grab database ID for the kernel when possible
+    this.mapIndex = null; // grab index on map when possible
     this.range = inRange; // how far kernels reach
     this.pops = []; // poping objects
+
+    
   }
 
 
@@ -424,7 +510,7 @@ function drawKernels () {
       // if popcorn hasn't pop'ed yet, pop it
       if (ea_kernel.pops.length === 0) {
         ea_kernel.pop(game.popRadiusMax, game.kernelRadius, 0.7);
-        // console.log('first pop generated');
+        //  onsole.log('first pop generated');
       }
     }
     
@@ -437,7 +523,7 @@ function drawKernels () {
       // after it pops, the popcorn burns and fades away during last 20% of time
       // offset makes sure popcorn stays white during first 80% of time
       normBurnTimer = ((rightNow - ea_kernel.spawnTime - POP_DELAY - POPING_LENGTH) / POP_TIMEOUT - 0.8) * 5;
-      // console.log(normBurnTimer);
+      //  onsole.log(normBurnTimer);
       // draw ea pop
       noStroke();
       fill(
@@ -453,9 +539,9 @@ function drawKernels () {
         interpolate(ea_pop.initialR * 2, ea_pop.finalR * 2, normPopTimer) * game.mapScale
       );
 
-      // console.log(' ');
-      // console.log('timer: ', normPopTimer);
-      // console.log('complete? ', ea_pop.complete);
+      //  onsole.log(' ');
+      //  onsole.log('timer: ', normPopTimer);
+      //  onsole.log('complete? ', ea_pop.complete);
       if (normPopTimer >= 1 && ea_pop.complete == false) {
         ea_pop.complete = true;
         
@@ -498,7 +584,7 @@ function drawKernels () {
             );
           
 
-          // console.log('pop to the left generated!');
+          //  onsole.log('pop to the left generated!');
         }
 
         function genRight () {
@@ -514,7 +600,7 @@ function drawKernels () {
                 ea_pop.rangeLeft - (ea_pop.finalR)
               )
             );
-          // console.log('pop to the left generated!');
+          //  onsole.log('pop to the left generated!');
         }
 
         function genUp () {
@@ -530,7 +616,7 @@ function drawKernels () {
                 ea_pop.rangeLeft - (ea_pop.finalR)
               )
             );
-          // console.log('pop to the top generated!');
+          //  onsole.log('pop to the top generated!');
         }
 
         function genDown () {
@@ -546,10 +632,10 @@ function drawKernels () {
                 ea_pop.rangeLeft - (ea_pop.finalR)
               )
             );
-          // console.log('pop to the bottom generated!');
+          //  onsole.log('pop to the bottom generated!');
         }
 
-        // console.log(ea_kernel.pops);
+        //  onsole.log(ea_kernel.pops);
       }
 
     });
@@ -592,26 +678,25 @@ function interpolate (inI, inF, inPosition, inCutOff = true) {
 // *********** p5.js main functions ***********
 // ********************************************
 
-// p5.js: runs before
+// p5.js: runs before setup loop
 function preload () {
   // this preloads before the rest
   // img = loadImage('cat.jpg');
 }
 
-// p5.js: runs once
+// p5.js: runs once before draw loop
 function setup () {
 
   getGameStateInitial();
-  
+  // developerConsole();
 }
 
-// p5.js: runs in a loop
-// used for game loop
+// p5.js's method that runs in a loop
+// used for game render loop
 function draw () {
 
   if (game? game.isReady : false) {
-    // console.log(game);
-    
+    //  onsole.log(game);
 
     background(0); // clear canvas
     drawMap(); // draw tiles
@@ -619,60 +704,69 @@ function draw () {
     drawKernels(); // draw kernels
     drawPlayers(); // draw players
 
-    // getGameState();
-    // sendGameState();
-    // getGameState();
+    game.checkKeysAndUpdateState(); // get player input & update data
+
+    // textAlign(CENTER);
+    // stroke(255, 125);
+    // fill(0, 125)
+    // strokeWeight(1)
+    // textSize(0.3*game.mapScale);
+    // text('Testing text ksdjflskdfjsldkfjlsdkfj', 200, 150, 1*game.mapScale, 0.3*game.mapScale);
+    // text('Testing text ksdjflskdfjsldkfjlsdkfj', 200, 400);
   }
 }
 
 // whenever window is resized
 function windowResized() {
-  // get X/Y ratio for game window for this map
-  let gameRatio = game.totalX / (1.0 * game.totalY);
 
-  // get X/Y ratio for game window for this map
-  let windowRatio = windowWidth / (1.0 * windowHeight);
+  if (game && game.isReady) {
+    // get X/Y ratio for game window for this map
+    let gameRatio = game.totalX / (1.0 * game.totalY);
 
-  // if game ratio is bigger than window ratio, let window width decide play area
-  // if game ratio is less than window ratio, let window height decide play area
+    // get X/Y ratio for game window for this map
+    let windowRatio = windowWidth / (1.0 * windowHeight);
 
-  if (gameRatio > windowRatio) {
-    resizeCanvas(windowWidth * SIZE_DOWN | 0, windowWidth / gameRatio * SIZE_DOWN | 0);
-    game.resize(windowWidth * SIZE_DOWN | 0, windowWidth / gameRatio * SIZE_DOWN | 0);
-  } else {
-    resizeCanvas(windowHeight * gameRatio * SIZE_DOWN | 0, windowHeight * SIZE_DOWN | 0);
-    game.resize(windowHeight * gameRatio * SIZE_DOWN | 0, windowHeight * SIZE_DOWN | 0);
+    // if game ratio is bigger than window ratio, let window width decide play area
+    // if game ratio is less than window ratio, let window height decide play area
+
+    if (gameRatio > windowRatio) {
+      resizeCanvas(windowWidth * SIZE_DOWN | 0, windowWidth / gameRatio * SIZE_DOWN | 0);
+      game.resize(windowWidth * SIZE_DOWN | 0, windowWidth / gameRatio * SIZE_DOWN | 0);
+    } else {
+      resizeCanvas(windowHeight * gameRatio * SIZE_DOWN | 0, windowHeight * SIZE_DOWN | 0);
+      game.resize(windowHeight * gameRatio * SIZE_DOWN | 0, windowHeight * SIZE_DOWN | 0);
+    }
   }
-  
   
 }
 
-// ********* JSON Functions ************
+// ********* Network data Functions ************
 
+// create game based on data from server
 function getGameStateInitial () {
-  // console.log('preloadGame() ran');
 
-  let url = '/rooms_api/' + ROOM_NUMBER;
+  let url = '/rooms_api_passive/' + ROOM_NUMBER;
 
   fetch(url)
   .then(res => res.json())
   .then((res) => {
-    // console.log('Got a state JSON from server: ', res);
     
+    // update map
     game = new Game(res.map_info.map, res.map_info.map_max_x, res.map_info.map_max_y);
+
+    // sets up drawing based on map
     var canvas = createCanvas(game.totalX, game.totalY); // create canvas
     canvas.parent('room'); // place canvas into div with id 'main'
     canvas.class("room-c"); // give canvas a name
     frameRate(FRAME_RATE); // rendering frame rate
-    windowResized();    
 
+    // update players
     res.player_info.forEach((ea_player, ea_index)=>{
-      // console.log(ea_player);
 
       isThisMe = ea_player.user_id === USER_NUMBER ? true : false;   // current_user match player's user_id?
 
       if (isThisMe) {
-        console.log('localplayer x=' , ea_player.game_x, '  , y=', ea_player.game_y);
+        // onsole.log('localplayer x=' , ea_player.game_x, '  , y=', ea_player.game_y);
       }
 
       game.addPlayer(
@@ -684,19 +778,31 @@ function getGameStateInitial () {
 
     });
 
-    game.isReady = true;
+    // update things - mostly prevent from old mines from being drawn
+    // will need rework on getting timeouts of existing mines rather than ignoring
+    // (to do)
+    res.things.forEach((eachServerThing) => {
+      if (eachServerThing.id > game.thingNonce) {
+        game.thingNonce = eachServerThing.id;
+      }
 
-    getGameState();
+    });
+
+    game.isReady = true;
+    windowResized();
+
+    sendGameState();
   })
   .catch(err => {
-    console.log(err)
+    //  onsole.log(err)
   }); // throw err
 
-  // game = new Game();
 }
 
-function getGameState () {
-  // console.log('preloadGame() ran');
+// depreciated in favor of response from sending data & getting response in 1 go
+// gets all info from server
+function getGameStateOld () {
+  //  onsole.log('preloadGame() ran');
 
   let url = '/rooms_api/' + ROOM_NUMBER;
 
@@ -719,14 +825,14 @@ function getGameState () {
       isThisMe = ea_server_player.user_id === USER_NUMBER ? true : false;   // current_user match player's user_id?
 
       if (isThisMe) {
-        console.log('localplayer x=' , ea_server_player.game_x, '  , y=', ea_server_player.game_y);
+        //  onsole.log('localplayer x=' , ea_server_player.game_x, '  , y=', ea_server_player.game_y);
       }
 
       if (indexOfClientPlayerMatch > -1) {
         // if match existing, update existing players at found index
         game.players[indexOfClientPlayerMatch].X = ea_server_player.game_x;
         game.players[indexOfClientPlayerMatch].Y = ea_server_player.game_y;
-        game.players[indexOfClientPlayerMatch].isPlayer = isThisMe;
+        game.players[indexOfClientPlayerMatch].isLocal = isThisMe;
       } else {
         // if match doesn't exist, add the player
         game.addPlayer(
@@ -739,65 +845,172 @@ function getGameState () {
 
     });
 
-    game.isReady = true;
+    game.isReady = true; // mark game as ready to start render loop
 
     sendGameState();
 
   })
-  // .catch(err => {
-  //   console.log(err)
-  // }); // throw err
-
-  // game = new Game();
-}
-
-
-function getGameStateTest () {
-  // console.log('getGameState() ran');
-
-  // let url = 'http://localhost:3000/rooms_api/1';
-  let url = '/rooms_api/1'
-
-  fetch(url)
-  .then(res => res.json())
-  .then((out) => {
-    // console.log('Got a state JSON from server: ', out);
-  })
   .catch(err => {
-    console.log(err)
-  }); // throw err
+    //  onsole.log(err)
+  });
+
 }
 
+// processes info received (get/gotten) from server
+function analyzeServerResponse (res) {
+
+  // update players 
+  updateLocalPlayersFromResponse(res);
+
+  // update map
+  game.updateMap(res.map_info.map);
+
+  // update things, now only one type of thing, in future could be more (to do)
+  updateThingsFromResponse(res);
+
+}
+
+function updateThingsFromResponse (res) {
+
+  
+
+  res.things.forEach((eachServerThing, eachServerThingIndex) => {
+
+    // have to compare server kernels vs existing and only create
+    // if it wasn't found on client side
+    // client takes care of clearing old kernels
+    // database takes care of clearing their kernels
+
+    indexOfClientThingMatch = game.things.findIndex((clientThing) => {
+      return clientThing.in_db_id == eachServerThing.id;
+    });
+
+
+    if (indexOfClientThingMatch < 0) {
+      if (game.thingNonce < eachServerThing.id) {
+        // if highest num thing added to the game is older than this thing
+        // update highest num thing added to local game
+
+        game.thingNonce = eachServerThing.id; 
+        
+        // and render the new thing locally
+        game.placeLocalKernel(
+          eachServerThing.game_x,
+          eachServerThing.game_y,
+          eachServerThing.strength,
+          eachServerThing.id
+        )
+      }
+
+      // onsole.log(game.kernels);
+    }
+
+    
+  });
+
+  
+}
+
+function updateLocalPlayersFromResponse (res) {
+
+  res.player_info.forEach((ea_server_player, ea_server_player_index) => {
+
+    // here I have to update current players if they already exist
+    // if they do not exist, I add new players
+    // if they existed but no longer do, remove them
+
+    // does ea_player's user_id match any current player's user_id?      
+    indexOfClientPlayerMatch = game.players.findIndex((clientPlayer) => {
+      
+      return clientPlayer.userId == ea_server_player.user_id;
+    });
+
+    // check if current_user match player's user_id?
+    isThisMe = ea_server_player.user_id === USER_NUMBER ? true : false;
+
+    // if (isThisMe) {
+      //  onsole.log('localplayer x=' , ea_server_player.game_x, '  , y=', ea_server_player.game_y);
+    // }
+
+    if (indexOfClientPlayerMatch > -1 && !isThisMe) {
+      // if match existing, update existing players at found index
+      game.players[indexOfClientPlayerMatch].X = ea_server_player.game_x;
+      game.players[indexOfClientPlayerMatch].Y = ea_server_player.game_y;
+      game.players[indexOfClientPlayerMatch].isLocal = isThisMe;
+    } else if (indexOfClientPlayerMatch > -1 && isThisMe) {
+      // if this is the local player,
+      // check if the server rejected the last move via rejection flag
+      // no point not to update since server didn't update with the move
+      // security thing. (to do)      
+    } else {
+      // if match doesn't exist, add the player
+      game.addPlayer(
+        ea_server_player.user_id,                          // user id of this player
+        ea_server_player.game_x,                           // x location of this player
+        ea_server_player.game_y,                           // y location of this player
+        isThisMe                                           // is this player the signed in user
+      );
+    }
+
+    
+  });
+
+  // there can still be client players that don't exist on server anymore for this room
+  // so opposite search might be easiest
+  // look for local players which ones can't be found in server player list
+  // and remove them from local list
+  game.players.forEach((ea_local_player, ea_local_player_index) => {
+    indexOfServerPlayerMatch = res.player_info.findIndex((serverPlayer) => {
+      return serverPlayer.user_id == ea_local_player.userId;
+    });
+    if (indexOfServerPlayerMatch < 0) {
+      game.rmPlayer(ea_local_player_index);
+    }
+  });
+}
+// sends this player info to server
 function sendGameState () {
   
-  game.checkKeys(); // get player input & update data
+  // game.checkKeysAndUpdateState(); // get player input & update data
 
   myPlayerIndex = game.findMe();
 
   let dataForSending = JSON.stringify({
     X: game.players[myPlayerIndex].X,
-    Y: game.players[myPlayerIndex].Y
+    Y: game.players[myPlayerIndex].Y,
+    game_actions: game.actionQueue
   });
 
-  // console.log('sent: ', dataForSending);
+  // onsole.log('sent: ', dataForSending);
 
- 
+  // erase all old actions now
+  game.cleanActions();
   
+  // very last action after sending is receiving data
+  // and sending that data to analyzeServerResponse function
+  // and only after re-running this function
 
-  $.ajax({ url: '/rooms_api/1',
+  $.ajax({ url: '/rooms_api/' + ROOM_NUMBER,
     type: 'POST',
     headers: { 'X-CSRF-Token': Rails.csrfToken() },
     data: dataForSending,
     contentType : 'application/json',
     error: function(xhr){ 
       // alert("ERROR ON SUBMIT");
-      console.log('error on submit');
-      console.log(xhr);
+      //  onsole.log('error on submit');
+      //  onsole.log(xhr);
     },
-    success: function( res ){ 
+    success: function(res){ 
       //data response can contain what we want here...
-      // console.log("successful send");
-      getGameState();
+      //  onsole.log("successful send");
+      // onsole.log('response from sending game state is:');
+      // onsole.log(res);
+
+      // getGameState(); // try to get game state
+      console.log(res);
+
+      analyzeServerResponse(res); // update the board based on received data
+      sendGameState(); // testing repeating send game state call instead
     }
   });
 
@@ -805,11 +1018,28 @@ function sendGameState () {
  
 }
 
+// mouse click event (for testing only) (p5 lib)
 function mousePressed () {
   // testing only
   // getGameState();
   // sendGameState();
 }
+
+// function developerConsole () {
+  // let div = document.createElement("div");
+  // document.body.appendChild(div);
+
+  // div.style.width = "100px";
+  // div.style.height = "100px";
+  // div.style.background = "darkgrey";
+  // div.style.color = "white";
+  // div.style.position = "absolute";  
+  // div.setAttribute('draggable', true);
+  // // div.innerHTML = 'Console<br>';
+  // div.style.left = "10px";
+  // div.style.top = "10px";
+
+// }
 
 
 // ******* trashed but maybe for future use? **********
@@ -819,9 +1049,9 @@ function mousePressed () {
     // https://github.com/github/fetch/issues/478
 
 
-    let url = 'http://localhost:3000/rooms_api/1';
+    let url = 'http://localhost:3000/rooms_api/' + ROOM_NUMBER;
     let CSRF_TOKEN = document.querySelectorAll('meta[name="csrf-token"]')[0].content;
-    console.log('CSRF token should be: ', CSRF_TOKEN)
+    onsole.log('CSRF token should be: ', CSRF_TOKEN)
 
     
 
@@ -835,15 +1065,16 @@ function mousePressed () {
       }
     }
 
-    console.log('sendGameState() is sending this:');
-    console.log(messageBeingSent);
+     onsole.log('sendGameState() is sending this:');
+     onsole.log(messageBeingSent);
 
     fetch(url, messageBeingSent).then((res) => {
-      console.log('Sent data. Got response back: ', res);
+       onsole.log('Sent data. Got response back: ', res);
     }).catch((err) => {
-      console.log('Caught error: '); 
-      console.log(err);
+       onsole.log('Caught error: '); 
+       onsole.log(err);
     });
 */
 
 // beforeSend: function(xhr) {xhr.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'))},
+
