@@ -308,21 +308,26 @@ class Game {
     let player_id = this.findMe();
 
     let localPlayer = this.players[player_id];
+    //  onsole.log('player_id', player_id);
+    //  onsole.log('x ', localPlayer.X);
+    //  onsole.log('y', localPlayer.Y);
+    let isAlive = (localPlayer.lives > 0);
+    
     let isFree = this.safeToTravel(localPlayer.X, localPlayer.Y); // minimize checks
 
-    if ((keyState[localPlayer.keys.left] || keyState[65]) && isFree.left) {
+    if ((keyState[localPlayer.keys.left] || keyState[65]) && isFree.left && isAlive) {
       localPlayer.X -= PLAYER_SPEED;
     }
-    if ((keyState[localPlayer.keys.up] || keyState[87]) && isFree.up) {
+    if ((keyState[localPlayer.keys.up] || keyState[87]) && isFree.up && isAlive) {
       localPlayer.Y -= PLAYER_SPEED;
     }
-    if ((keyState[localPlayer.keys.right] || keyState[68]) && isFree.right) {
+    if ((keyState[localPlayer.keys.right] || keyState[68]) && isFree.right && isAlive) {
       localPlayer.X += PLAYER_SPEED;
     }
-    if ((keyState[localPlayer.keys.down] || keyState[83]) && isFree.down) {
+    if ((keyState[localPlayer.keys.down] || keyState[83]) && isFree.down && isAlive) {
       localPlayer.Y += PLAYER_SPEED;
     }
-    if (keyState[localPlayer.keys.action] || keyState[70]) {
+    if (keyState[localPlayer.keys.action] || keyState[70] && isAlive) {
       game.tryToPlaceKernel(localPlayer);
     }
 
@@ -349,6 +354,7 @@ class Player {
       B: Math.random() * 255 | 0
     }
     this.isLocal = inIsLocal; // is this the local player
+    this.lives = 1;
   }
 }
 
@@ -450,13 +456,31 @@ function drawPlayers () {
 
     stroke(0); strokeWeight(game.outlineWidth * game.mapScale);
 
+    let isAlive = (ea_player.lives > 0);
+
+
     // draw each player
-    ellipse(
-      ea_player.X * game.mapScale, // position X
-      ea_player.Y * game.mapScale, // position Y
-      game.playerRadius * 2 * game.mapScale, // size X
-      game.playerRadius * 2 * game.mapScale // size Y
-    );
+    if (isAlive) {
+      ellipse(
+        ea_player.X * game.mapScale, // position X
+        ea_player.Y * game.mapScale, // position Y
+        game.playerRadius * 2 * game.mapScale, // size X
+        game.playerRadius * 2 * game.mapScale // size Y
+      );
+    } else {
+      textAlign(CENTER);
+      stroke(255, 125);
+      fill(color(ea_player.style.R, ea_player.style.G, ea_player.style.B, 125))
+      strokeWeight(game.mapScale / 32)
+      textSize(0.3 * game.mapScale);
+      text(
+        'REKT', 
+        ea_player.X, 
+        ea_player.Y, 
+        1 * game.mapScale, 
+        0.3 * game.mapScale
+      );
+    }
   });
 
 }
@@ -936,6 +960,7 @@ function updateLocalPlayersFromResponse (res) {
       // check if the server rejected the last move via rejection flag
       // no point not to update since server didn't update with the move
       // security thing. (to do)      
+      game.players[indexOfClientPlayerMatch].lives = ea_server_player.lives
     } else {
       // if match doesn't exist, add the player
       game.addPlayer(
@@ -965,8 +990,6 @@ function updateLocalPlayersFromResponse (res) {
 // sends this player info to server
 function sendGameState () {
   
-  // game.checkKeysAndUpdateState(); // get player input & update data
-
   myPlayerIndex = game.findMe();
 
   let dataForSending = JSON.stringify({
@@ -1002,7 +1025,7 @@ function sendGameState () {
       // onsole.log(res);
 
       // getGameState(); // try to get game state
-      console.log(res);
+      // onsole.log(res);
 
       analyzeServerResponse(res); // update the board based on received data
       sendGameState(); // testing repeating send game state call instead
