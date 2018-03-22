@@ -170,6 +170,15 @@ class RoomsController < ApplicationController
       end
     end
 
+    # (0..this_map_max_y-1).each do |y|
+    #   (0..this_map_max_x-1).each do |x|
+    #     print this_map[x][y]
+    #   end
+    #   print "\n"
+    # end
+
+
+
     # puts "1 player_map *********************************"
     # p player_map
 
@@ -189,18 +198,28 @@ class RoomsController < ApplicationController
         # if players still around, help with the map
         player_x_square = ea_player.game_x.floor.to_i
         player_y_square = ea_player.game_y.floor.to_i
-        player_map[player_x_square][player_y_square].push(ea_player.id);
+        square_cell = player_map[player_x_square][player_y_square];
+        player_map[player_x_square][player_y_square] = (square_cell.dup << ea_player.id)
 
         # puts "player_x_square *********************************"
         # p player_x_square
         # p player_y_square
-        # p player_map
+        
 
         # this forms a 2d map with array of player id's at each square
       end
 
     end    
 
+    # (0..(this_map_max_y -1)).each do |y|
+    #   (0..(this_map_max_x -1)).each do |x|
+    #     print player_map[x][y]
+    #   end
+    #   print "\n"
+    # end
+
+    # p player_map
+    
     # p this_map
 
     # grab array of the room's things
@@ -318,8 +337,6 @@ class RoomsController < ApplicationController
           search_range = ea_thing.strength - 1
         end
 
-
-
         Thing.find_by_id(ea_thing.id).destroy()
       end
 
@@ -328,12 +345,16 @@ class RoomsController < ApplicationController
 
 
     # response below
-
-    render :json =>  {
+    dataToSend = {
       'player_info': stored_players,
       'map_info': this_room,
       'things': current_things
     }
+
+    # puts "*************************"
+    # p dataToSend
+
+    render :json =>  dataToSend
 
   end
 
