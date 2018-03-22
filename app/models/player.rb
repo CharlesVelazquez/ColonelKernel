@@ -4,5 +4,6 @@ class Player < ApplicationRecord
   
   belongs_to :user
   belongs_to :room, optional: true # optional makes it not required to have a room
-
+  has_many :things
+  
 end
