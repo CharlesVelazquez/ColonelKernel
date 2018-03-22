@@ -60,7 +60,10 @@ class RoomsController < ApplicationController
     if @page_room
       puts "page found"
 
-      current_user.player.update_attribute(:room_id, params[:id]) # set player to this new room
+      current_user.player.update_attribute(:popped, 0) # set player to this 
+      current_user.player.update_attribute(:lives, 1) # set player to this 
+      current_user.player.update_attribute(:room_id, params[:id]) # set player to this 
+      current_user.player.touch # set player to this new room
 
     else
       redirect_to rooms_path
@@ -98,7 +101,7 @@ class RoomsController < ApplicationController
   def listen_for_players
 
 
-    sleep 1 # simulating lag **** DISABLE FOR REAL USE!!!!!!!!!!! ****
+    # sleep 1 # simulating lag **** DISABLE FOR REAL USE!!!!!!!!!!! ****
 
 
     # received data processed here after authentication   
@@ -189,11 +192,102 @@ class RoomsController < ApplicationController
     # if found act and destroy
     current_things.each do |ea_thing|
       if (Time.now.utc - ea_thing.created_at.utc) > (ea_thing.ms_delay / 1000)
-        Thing.find_by_id(ea_thing.id).destroy()
+        
         
         # calculate squares affected
         # act on players
-        
+        thing_x = ea_thing.game_x.floor.to_i
+        thing_y = ea_thing.game_y.floor.to_i
+
+        # (to do) all this needs to be moved out
+
+        # left check
+        search_range = ea_thing.strength
+        search_x = thing_x
+        search_y = thing_y
+        loop do
+          break if (search_range < 0)                   # exhaustion of range
+          break if (search_x < 0)                       # out of bounds
+          break if (this_map[search_x, search_y] == 1)  # hard wall
+          # if players found, remove, add popped points to owner
+          this_square = player_map[search_x][search_y]
+          if this_square
+            this_square.each do |ea_square_player_id|
+              Player.find_by_id(ea_square_player_id).update_attribute(:lives, 0)
+            end
+          end
+          # update for next loop
+          search_x = search_x - 1
+          search_y = search_y
+          search_range = ea_thing.strength - 1
+        end
+
+        # right check
+        search_range = ea_thing.strength
+        search_x = thing_x
+        search_y = thing_y
+        loop do
+          break if (search_range < 0)                   # exhaustion of range
+          break if (search_x >= this_map_max_x)                       # out of bounds
+          break if (this_map[search_x, search_y] == 1)  # hard wall
+          # if players found, remove, add popped points to owner
+          this_square = player_map[search_x][search_y]
+          if this_square
+            this_square.each do |ea_square_player_id|
+              Player.find_by_id(ea_square_player_id).update_attribute(:lives, 0)
+            end
+          end
+          # update for next loop
+          search_x = search_x + 1
+          search_y = search_y
+          search_range = ea_thing.strength - 1
+        end
+
+        # up check
+        search_range = ea_thing.strength
+        search_x = thing_x
+        search_y = thing_y
+        loop do
+          break if (search_range < 0)                   # exhaustion of range
+          break if (search_y < 0)                       # out of bounds
+          break if (this_map[search_x, search_y] == 1)  # hard wall
+          # if players found, remove, add popped points to owner
+          this_square = player_map[search_x][search_y]
+          if this_square
+            this_square.each do |ea_square_player_id|
+              Player.find_by_id(ea_square_player_id).update_attribute(:lives, 0)
+            end
+          end
+          # update for next loop
+          search_x = search_x
+          search_y = search_y - 1
+          search_range = ea_thing.strength - 1
+        end
+
+        # down check
+        search_range = ea_thing.strength
+        search_x = thing_x
+        search_y = thing_y
+        loop do
+          break if (search_range < 0)                   # exhaustion of range
+          break if (search_y >= this_map_max_y)                       # out of bounds
+          break if (this_map[search_x, search_y] == 1)  # hard wall
+          # if players found, remove, add popped points to owner
+          this_square = player_map[search_x][search_y]
+          if this_square
+            this_square.each do |ea_square_player_id|
+              Player.find_by_id(ea_square_player_id).update_attribute(:lives, 0)
+            end
+          end
+          # update for next loop
+          search_x = search_x
+          search_y = search_y + 1
+          search_range = ea_thing.strength - 1
+        end
+
+
+
+        Thing.find_by_id(ea_thing.id).destroy()
       end
 
     end
