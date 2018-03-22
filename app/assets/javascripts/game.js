@@ -22,6 +22,7 @@ const DIRECTIONS = {
   ALL: 5
 }; // enums to make directions a bit more readable
 
+
 // globals
 
 var game; // will hold game
@@ -79,10 +80,13 @@ class Game {
     document.addEventListener('keydown', key_down_handler, true);
     function key_down_handler (key_down_event) {
       keyState[key_down_event.keyCode || key_down_event.which] = true;
+      // cross browser comatibility
     }
     document.addEventListener('keyup', key_up_handler, true);
     function key_up_handler (key_up_event) {
       keyState[key_up_event.keyCode || key_up_event.which] = false;
+      // console.log('key up detected');
+      // cross browser comatibility
     }
 
   }
@@ -194,22 +198,22 @@ class Game {
   findMe () {
     
     myPlayerIndex = this.players.findIndex((element)=>{
-      // console.log(element.isPlayer);
+      //  onsole.log(element.isPlayer);
       return element.isPlayer;
     });
 
     return myPlayerIndex;
   }
 
-  checkKeys () {
+  checkKeysAndUpdateState () {
 
     // let player_id = 0;
     let player_id = this.findMe();
 
     let localPlayer = this.players[player_id];
-    // console.log('player_id', player_id);
-    // console.log('x ', localPlayer.X);
-    // console.log('y', localPlayer.Y);
+    //  onsole.log('player_id', player_id);
+    //  onsole.log('x ', localPlayer.X);
+    //  onsole.log('y', localPlayer.Y);
     
     let isFree = this.safeToTravel(localPlayer.X, localPlayer.Y); // minimize checks
 
@@ -249,7 +253,7 @@ class Game {
         }); 
           
         
-        // console.log(this.kernels); 
+        //  onsole.log(this.kernels); 
         localPlayer.lastPop = rightNow; // place popcorn
       }
     }
@@ -424,7 +428,7 @@ function drawKernels () {
       // if popcorn hasn't pop'ed yet, pop it
       if (ea_kernel.pops.length === 0) {
         ea_kernel.pop(game.popRadiusMax, game.kernelRadius, 0.7);
-        // console.log('first pop generated');
+        //  onsole.log('first pop generated');
       }
     }
     
@@ -437,7 +441,7 @@ function drawKernels () {
       // after it pops, the popcorn burns and fades away during last 20% of time
       // offset makes sure popcorn stays white during first 80% of time
       normBurnTimer = ((rightNow - ea_kernel.spawnTime - POP_DELAY - POPING_LENGTH) / POP_TIMEOUT - 0.8) * 5;
-      // console.log(normBurnTimer);
+      //  onsole.log(normBurnTimer);
       // draw ea pop
       noStroke();
       fill(
@@ -453,9 +457,9 @@ function drawKernels () {
         interpolate(ea_pop.initialR * 2, ea_pop.finalR * 2, normPopTimer) * game.mapScale
       );
 
-      // console.log(' ');
-      // console.log('timer: ', normPopTimer);
-      // console.log('complete? ', ea_pop.complete);
+      //  onsole.log(' ');
+      //  onsole.log('timer: ', normPopTimer);
+      //  onsole.log('complete? ', ea_pop.complete);
       if (normPopTimer >= 1 && ea_pop.complete == false) {
         ea_pop.complete = true;
         
@@ -498,7 +502,7 @@ function drawKernels () {
             );
           
 
-          // console.log('pop to the left generated!');
+          //  onsole.log('pop to the left generated!');
         }
 
         function genRight () {
@@ -514,7 +518,7 @@ function drawKernels () {
                 ea_pop.rangeLeft - (ea_pop.finalR)
               )
             );
-          // console.log('pop to the left generated!');
+          //  onsole.log('pop to the left generated!');
         }
 
         function genUp () {
@@ -530,7 +534,7 @@ function drawKernels () {
                 ea_pop.rangeLeft - (ea_pop.finalR)
               )
             );
-          // console.log('pop to the top generated!');
+          //  onsole.log('pop to the top generated!');
         }
 
         function genDown () {
@@ -546,10 +550,10 @@ function drawKernels () {
                 ea_pop.rangeLeft - (ea_pop.finalR)
               )
             );
-          // console.log('pop to the bottom generated!');
+          //  onsole.log('pop to the bottom generated!');
         }
 
-        // console.log(ea_kernel.pops);
+        //  onsole.log(ea_kernel.pops);
       }
 
     });
@@ -592,26 +596,25 @@ function interpolate (inI, inF, inPosition, inCutOff = true) {
 // *********** p5.js main functions ***********
 // ********************************************
 
-// p5.js: runs before
+// p5.js: runs before setup loop
 function preload () {
   // this preloads before the rest
   // img = loadImage('cat.jpg');
 }
 
-// p5.js: runs once
+// p5.js: runs once before draw loop
 function setup () {
 
   getGameStateInitial();
-  
+  // developerConsole();
 }
 
-// p5.js: runs in a loop
-// used for game loop
+// p5.js's method that runs in a loop
+// used for game render loop
 function draw () {
 
   if (game? game.isReady : false) {
-    // console.log(game);
-    
+    //  onsole.log(game);
 
     background(0); // clear canvas
     drawMap(); // draw tiles
@@ -619,9 +622,7 @@ function draw () {
     drawKernels(); // draw kernels
     drawPlayers(); // draw players
 
-    // getGameState();
-    // sendGameState();
-    // getGameState();
+    game.checkKeysAndUpdateState(); // get player input & update data
   }
 }
 
@@ -647,17 +648,16 @@ function windowResized() {
   
 }
 
-// ********* JSON Functions ************
+// ********* Network data Functions ************
 
+// create game based on data from server
 function getGameStateInitial () {
-  // console.log('preloadGame() ran');
 
   let url = '/rooms_api/' + ROOM_NUMBER;
 
   fetch(url)
   .then(res => res.json())
   .then((res) => {
-    // console.log('Got a state JSON from server: ', res);
     
     game = new Game(res.map_info.map, res.map_info.map_max_x, res.map_info.map_max_y);
     var canvas = createCanvas(game.totalX, game.totalY); // create canvas
@@ -667,12 +667,11 @@ function getGameStateInitial () {
     windowResized();    
 
     res.player_info.forEach((ea_player, ea_index)=>{
-      // console.log(ea_player);
 
       isThisMe = ea_player.user_id === USER_NUMBER ? true : false;   // current_user match player's user_id?
 
       if (isThisMe) {
-        console.log('localplayer x=' , ea_player.game_x, '  , y=', ea_player.game_y);
+        // onsole.log('localplayer x=' , ea_player.game_x, '  , y=', ea_player.game_y);
       }
 
       game.addPlayer(
@@ -689,14 +688,14 @@ function getGameStateInitial () {
     getGameState();
   })
   .catch(err => {
-    console.log(err)
+    //  onsole.log(err)
   }); // throw err
 
-  // game = new Game();
 }
 
+// gets all info from server
 function getGameState () {
-  // console.log('preloadGame() ran');
+  //  onsole.log('preloadGame() ran');
 
   let url = '/rooms_api/' + ROOM_NUMBER;
 
@@ -719,7 +718,7 @@ function getGameState () {
       isThisMe = ea_server_player.user_id === USER_NUMBER ? true : false;   // current_user match player's user_id?
 
       if (isThisMe) {
-        console.log('localplayer x=' , ea_server_player.game_x, '  , y=', ea_server_player.game_y);
+        //  onsole.log('localplayer x=' , ea_server_player.game_x, '  , y=', ea_server_player.game_y);
       }
 
       if (indexOfClientPlayerMatch > -1) {
@@ -739,38 +738,21 @@ function getGameState () {
 
     });
 
-    game.isReady = true;
+    game.isReady = true; // mark game as ready to start render loop
 
     sendGameState();
 
   })
-  // .catch(err => {
-  //   console.log(err)
-  // }); // throw err
-
-  // game = new Game();
-}
-
-
-function getGameStateTest () {
-  // console.log('getGameState() ran');
-
-  // let url = 'http://localhost:3000/rooms_api/1';
-  let url = '/rooms_api/1'
-
-  fetch(url)
-  .then(res => res.json())
-  .then((out) => {
-    // console.log('Got a state JSON from server: ', out);
-  })
   .catch(err => {
-    console.log(err)
-  }); // throw err
+    //  onsole.log(err)
+  });
+
 }
 
+// sends this player info to server
 function sendGameState () {
   
-  game.checkKeys(); // get player input & update data
+  // game.checkKeysAndUpdateState(); // get player input & update data
 
   myPlayerIndex = game.findMe();
 
@@ -779,24 +761,24 @@ function sendGameState () {
     Y: game.players[myPlayerIndex].Y
   });
 
-  // console.log('sent: ', dataForSending);
+  //  onsole.log('sent: ', dataForSending);
 
  
   
 
-  $.ajax({ url: '/rooms_api/1',
+  $.ajax({ url: '/rooms_api/' + ROOM_NUMBER,
     type: 'POST',
     headers: { 'X-CSRF-Token': Rails.csrfToken() },
     data: dataForSending,
     contentType : 'application/json',
     error: function(xhr){ 
       // alert("ERROR ON SUBMIT");
-      console.log('error on submit');
-      console.log(xhr);
+      //  onsole.log('error on submit');
+      //  onsole.log(xhr);
     },
-    success: function( res ){ 
+    success: function(res){ 
       //data response can contain what we want here...
-      // console.log("successful send");
+      //  onsole.log("successful send");
       getGameState();
     }
   });
@@ -805,11 +787,28 @@ function sendGameState () {
  
 }
 
+// mouse click event (for testing only) (p5 lib)
 function mousePressed () {
   // testing only
   // getGameState();
   // sendGameState();
 }
+
+// function developerConsole () {
+  // let div = document.createElement("div");
+  // document.body.appendChild(div);
+
+  // div.style.width = "100px";
+  // div.style.height = "100px";
+  // div.style.background = "darkgrey";
+  // div.style.color = "white";
+  // div.style.position = "absolute";  
+  // div.setAttribute('draggable', true);
+  // // div.innerHTML = 'Console<br>';
+  // div.style.left = "10px";
+  // div.style.top = "10px";
+
+// }
 
 
 // ******* trashed but maybe for future use? **********
@@ -819,9 +818,9 @@ function mousePressed () {
     // https://github.com/github/fetch/issues/478
 
 
-    let url = 'http://localhost:3000/rooms_api/1';
+    let url = 'http://localhost:3000/rooms_api/' + ROOM_NUMBER;
     let CSRF_TOKEN = document.querySelectorAll('meta[name="csrf-token"]')[0].content;
-    console.log('CSRF token should be: ', CSRF_TOKEN)
+    onsole.log('CSRF token should be: ', CSRF_TOKEN)
 
     
 
@@ -835,15 +834,16 @@ function mousePressed () {
       }
     }
 
-    console.log('sendGameState() is sending this:');
-    console.log(messageBeingSent);
+     onsole.log('sendGameState() is sending this:');
+     onsole.log(messageBeingSent);
 
     fetch(url, messageBeingSent).then((res) => {
-      console.log('Sent data. Got response back: ', res);
+       onsole.log('Sent data. Got response back: ', res);
     }).catch((err) => {
-      console.log('Caught error: '); 
-      console.log(err);
+       onsole.log('Caught error: '); 
+       onsole.log(err);
     });
 */
 
 // beforeSend: function(xhr) {xhr.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'))},
+

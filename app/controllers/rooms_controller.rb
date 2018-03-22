@@ -62,21 +62,24 @@ class RoomsController < ApplicationController
   def show_api
     # render :json => Room.all.first.players
     this_room = Room.find_by_id(params[:id])
-      
-      if this_room
-        puts "********** api for room #{this_room.id} running! **********"
-        render :json =>  {
-            'player_info': this_room.players.all,
-            'map_info': this_room
-          }
+    
+    sleep 0.1 # simulating lag
 
-        
-      else
-        puts "********** room not found *********"
-        render :json =>  nil
-        
-        
-      end
+
+    if this_room
+      puts "********** api for room #{this_room.id} running! **********"
+      render :json =>  {
+          'player_info': this_room.players.all,
+          'map_info': this_room
+        }
+
+      
+    else
+      puts "********** room not found *********"
+      render :json =>  nil
+      
+      
+    end
 
   end
 
@@ -88,6 +91,8 @@ class RoomsController < ApplicationController
     # p params
     # puts 'current user is ' + current_user.id.to_s
 
+    sleep 0.1 # simulating lag
+    
     # update logged in user's player location
     current_user.player.update_attribute(:game_x, params[:X])
     current_user.player.update_attribute(:game_y, params[:Y])
