@@ -66,7 +66,7 @@ class Game {
 
     // there are two types of coordinates
     // pixelsXY, for which mapScale is used to convert to pixels
-    // mapXY, where 1.0 is a length of a tile or square 
+    // mapXY, where 1.0 is a length of a tile or square
     // only drawing should care about pixels, all else in map coods
 
     this.mapScale = 50.0; // how many pixels in each square
@@ -83,7 +83,7 @@ class Game {
     this.playerRadius = 1 / 4.0; // how wide player is
     this.kernelRadius = 1 / 3.0; // how wide kernels are
     this.popRadiusMax = 1 * 0.9 / 2.0; // widest pops grow
-    
+
     this.outlineWidth = 1 / 16.0; // line thickness
 
     // this.players.push(new Player(1, 0.5, 0.5)); // add player
@@ -197,7 +197,7 @@ class Game {
     this.totalY = inY; // total Y height
 
     this.mapScale = this.totalX / this.mapSizeX; // how many pixels in each square
-    
+
     this.playerRadius = 1 / 4; // how wide player is
     this.kernelRadius = 1 / 3; // how wide kernels are
     this.popRadiusMax = 1 * 0.9 / 2; // widest pops grow
@@ -212,7 +212,7 @@ class Game {
     // returns if all corners are clear for specific travel
 
     let cornerTR_X = inX + inR + inStepX;
-    let cornerTR_Y = inY - inR + inStepY; 
+    let cornerTR_Y = inY - inR + inStepY;
 
     let cornerTL_X = inX - inR + inStepX;
     let cornerTL_Y = inY - inR + inStepY;
@@ -254,7 +254,7 @@ class Game {
       right: true,
       down: true
     };
-    
+
     // if attempted move is not safe, disable it
     if (!this.areCornersOk(inX, inY, inR, -travelDistance, 0)) {
       freeTest.left = false;
@@ -276,7 +276,7 @@ class Game {
   }
 
 
-  xyPositionToMapIndex (posX, posY) {    
+  xyPositionToMapIndex (posX, posY) {
     // based on absolute position in X and Y determine what map tile index it's refering to
     // returns integer that equals to map index
 
@@ -285,15 +285,15 @@ class Game {
 
   mapIndexToXYPosition (inIndex) {
     let tempPosition = {};
-    
+
     tempPosition.centerX = (inIndex % this.mapSizeX) + 0.5;
     tempPosition.centerY = Math.floor(inIndex / this.mapSizeY) + 0.5;
 
     return tempPosition;
   }
-  
+
   findMe () {
-    
+
     myPlayerIndex = this.players.findIndex((element)=>{
       //  onsole.log(element.isLocal);
       return element.isLocal;
@@ -407,15 +407,15 @@ class Pop {
     this.rangeLeft = inRange;
     this.popTime = (new Date()).getTime();
     this.complete = false;
-    
+
   }
-} 
+}
 
 // ********** helper drawing functions *************
 
 function drawMap () {
   // draw tiles
-  
+
   game.map.forEach((tile_type, index) => {
     // ground tile is everywhere at the bottom
     // noStroke();
@@ -489,7 +489,7 @@ function drawKernels () {
   // draw kernels
 
   // set style
-  stroke(0); strokeWeight(game.outlineWidth * game.mapScale);  
+  stroke(0); strokeWeight(game.outlineWidth * game.mapScale);
 
   // draw each kernel
   game.kernels.forEach( (ea_kernel, ea_kernel_index) => {
@@ -509,7 +509,7 @@ function drawKernels () {
               interpolate(10, 100, phase)
         )
       );  // rgb(220, 103, 10) rgb(250, 250, 100)
-      
+
       stroke(0); strokeWeight(game.outlineWidth * game.mapScale);
       ellipse(
         ea_kernel.X * game.mapScale, // position X
@@ -533,7 +533,7 @@ function drawKernels () {
         //  onsole.log('first pop generated');
       }
     }
-    
+
     let normPopTimer, normBurnTimer;
     // for each kernel, iterate through each pop event
     ea_kernel.pops.forEach((ea_pop) => {
@@ -564,8 +564,8 @@ function drawKernels () {
       //  onsole.log('complete? ', ea_pop.complete);
       if (normPopTimer >= 1 && ea_pop.complete == false) {
         ea_pop.complete = true;
-        
-        
+
+
         if (ea_pop.direction == DIRECTIONS.ALL && ea_pop.rangeLeft > 0) {
           genLeft();
           genRight();
@@ -602,7 +602,7 @@ function drawKernels () {
                 ea_pop.rangeLeft - ea_pop.finalR
               )
             );
-          
+
 
           //  onsole.log('pop to the left generated!');
         }
@@ -664,9 +664,9 @@ function drawKernels () {
       // erase the kernel that times out
       game.eraseKernel(ea_kernel_index);
     }
-      
-    
-    
+
+
+
 
   });
 }
@@ -680,7 +680,7 @@ function interpolate (inI, inF, inPosition, inCutOff = true) {
   // returns value at inProgress fraction between inI and inF
 
   // if cut off allowed, position is limited to values between 0 and 1
-  let temp = inCutOff ? 
+  let temp = inCutOff ?
     (inPosition > 1 ?
       1
       : (inPosition < 0 ?
@@ -689,7 +689,7 @@ function interpolate (inI, inF, inPosition, inCutOff = true) {
       )
     )
     : inPosition; // no cut-off, no change
-  
+
 
   return inI + (inF - inI) * temp;
 }
@@ -720,7 +720,7 @@ function draw () {
 
     background(0); // clear canvas
     drawMap(); // draw tiles
-    
+
     drawKernels(); // draw kernels
     drawPlayers(); // draw players
 
@@ -757,7 +757,6 @@ function windowResized() {
       game.resize(windowHeight * gameRatio * SIZE_DOWN | 0, windowHeight * SIZE_DOWN | 0);
     }
   }
-  
 }
 
 // ********* Network data Functions ************
@@ -770,7 +769,6 @@ function getGameStateInitial () {
   fetch(url)
   .then(res => res.json())
   .then((res) => {
-    
     // update map
     game = new Game(res.map_info.map, res.map_info.map_max_x, res.map_info.map_max_y);
 
@@ -836,9 +834,9 @@ function getGameStateOld () {
       // if they do not exist, I add new players
       // if they existed but no longer do, remove them
 
-      // does ea_player's user_id match any current player's user_id?      
+      // does ea_player's user_id match any current player's user_id?
       indexOfClientPlayerMatch = game.players.findIndex((clientPlayer) => {
-        
+
         return clientPlayer.userId == ea_server_player.user_id;
       });
 
@@ -1008,17 +1006,18 @@ function sendGameState () {
   // very last action after sending is receiving data
   // and sending that data to analyzeServerResponse function
   // and only after re-running this function
-
+  
   $.ajax({ url: '/rooms_api/' + ROOM_NUMBER,
     type: 'POST',
     headers: { 'X-CSRF-Token': Rails.csrfToken() },
     data: dataForSending,
     contentType : 'application/json',
-    error: function(xhr){ 
+    error: function(xhr){
       // alert("ERROR ON SUBMIT");
       //  onsole.log('error on submit');
       //  onsole.log(xhr);
     },
+          
     success: function(res){ 
       //data response can contain what we want here...
       //  onsole.log("successful send");
@@ -1033,8 +1032,8 @@ function sendGameState () {
     }
   });
 
-  
- 
+
+
 }
 
 // mouse click event (for testing only) (p5 lib)
@@ -1063,7 +1062,7 @@ function mousePressed () {
 
 // ******* trashed but maybe for future use? **********
 
-/** 
+/**
     // you have got to be kidding me, tag name capitalization might be the issue with fetch command....
     // https://github.com/github/fetch/issues/478
 
@@ -1072,7 +1071,7 @@ function mousePressed () {
     let CSRF_TOKEN = document.querySelectorAll('meta[name="csrf-token"]')[0].content;
     onsole.log('CSRF token should be: ', CSRF_TOKEN)
 
-    
+
 
     let messageBeingSent = {
       method: 'POST',
@@ -1090,10 +1089,7 @@ function mousePressed () {
     fetch(url, messageBeingSent).then((res) => {
        onsole.log('Sent data. Got response back: ', res);
     }).catch((err) => {
-       onsole.log('Caught error: '); 
-       onsole.log(err);
     });
 */
 
 // beforeSend: function(xhr) {xhr.setRequestHeader('X-CSRF-Token', $('meta[name="csrf-token"]').attr('content'))},
-
