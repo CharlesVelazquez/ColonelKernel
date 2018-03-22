@@ -55,4 +55,10 @@ end
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw, :jruby]
 
+# lets me use ajax jquery calls properly
 gem 'jquery-rails'
+
+# https://github.com/collectiveidea/delayed_job
+# http://guides.rubyonrails.org/active_job_basics.html#setting-the-backend
+# lets me do delayed tasks 
+gem 'delayed_job_active_record' 
