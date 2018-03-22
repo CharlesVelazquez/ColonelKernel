@@ -1,4 +1,8 @@
-
+<div class='newRoom'>
+  <%# link_to 'New Room', method: :create, controller: :rooms %>
+  <%# link_to "New Room", { controller: :rooms, action: :create },  method:"post" %>
+  <%= link_to "New Room", rooms_path, class: "temp rooms", method: :create %>
+</div>
 <div class="listContainer">
   <% Room.all.reverse.each do |ea_room| %>
     <div class="roomsList">
@@ -6,10 +10,4 @@
     </div>
 
   <% end %>
-</div>
-
-<div>
-  <%# link_to 'New Room', method: :create, controller: :rooms %>
-  <%# link_to "New Room", { controller: :rooms, action: :create },  method:"post" %>
-  <%= link_to "New Room", rooms_path, class: "temp rooms", method: :create %>
 </div>
