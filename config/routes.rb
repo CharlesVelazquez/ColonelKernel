@@ -17,8 +17,12 @@ Rails.application.routes.draw do
 
   # api commands
 
-  get '/rooms_api(/:id)', to: "rooms#show_api"
-  post '/rooms_api(/:id)', to: "rooms#listen_for_players"
+  get '/rooms_api_passive(/:id)', to: "rooms#show_api" # can get state without authentication
+  # get '/rooms_api(/:id)', to: "rooms#show_api"
+
+  post '/rooms_api(/:id)', to: "rooms#listen_for_players" #requires authentication
+  # get '/rooms_api(/:id)', to: "rooms#listen_for_players"
+  
 
   # rooms
   resources :rooms

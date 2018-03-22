@@ -23,12 +23,23 @@ class UsersController < ApplicationController
       # player_params[:room_id] = nil;
       
 
-      new_player = Player.new(game_x: 0.5, game_y: 0.5, lives: 1, user_id: new_user.id, room_id: nil)
+      new_player = Player.new(
+        game_x: 0.5,
+        game_y: 0.5,
+        lives: 1,
+        popped: 0,
+        nonce: 1,
+        color: 'rgb(' + rand(0..255).to_s + ',' + rand(0..255).to_s + ',' + rand(0..255).to_s + ')',
+        user_id: new_user.id,
+        room_id: nil
+      )
+
       # room must exist according to exception thrown, optional true added to model
-      new_player.save!
+      new_player.save
 
       # sends to root
       redirect_to '/'
+
     else
       # otherwise sends back
       redirect_to '/signup'
