@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Pop Pop Game</title>
+    <link href="https://fonts.googleapis.com/css?family=Arimo" rel="stylesheet">
     <%= csrf_meta_tags %>
 
     <!-- for unique other tags -->
@@ -12,17 +13,17 @@
   </head>
 
   <body style="margin: 0">
-    
+
     <div class="main">
       <%= yield %>
-      
+
     </div>
 
     <div class="nav">
       <% if current_user %>
-        Signed in as <%= current_user.name %> | <%= link_to "Logout", '/logout' %>
+        Signed in as <%= current_user.name %> | <%= link_to "Logout", '/logout', :class => 'nav' %>
       <% else %>
-        <%= link_to 'Login', '/login' %> | <%= link_to 'Signup', '/signup' %>
+        <%= link_to 'Login', '/login', :class => 'nav' %> | <%= link_to 'Signup', '/signup', :class => 'nav' %>
       <% end %>
     </div>
 
