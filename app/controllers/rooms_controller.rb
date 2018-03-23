@@ -198,6 +198,7 @@ class RoomsController < ApplicationController
         # if players still around, help with the map
         player_x_square = ea_player.game_x.floor.to_i
         player_y_square = ea_player.game_y.floor.to_i
+        
         square_cell = player_map[player_x_square][player_y_square];
         player_map[player_x_square][player_y_square] = (square_cell.dup << ea_player.id)
 
