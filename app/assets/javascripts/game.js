@@ -96,8 +96,8 @@ class Game {
     document.addEventListener('keyup', key_up_handler, true);
     function key_up_handler (key_up_event) {
       keyState[key_up_event.keyCode || key_up_event.which] = false;
-      // console.log('key up detected');
-      // cross browser comatibility
+      // onsole.log('key up detected');
+      // ross browser comatibility
     }
 
   }
@@ -911,7 +911,7 @@ function updateThingsFromResponse (res) {
         
         // and render the new thing locally
         game.placeLocalKernel(
-          eachServerThing.game_x,
+          eachServerThing.game_x, 
           eachServerThing.game_y,
           eachServerThing.strength,
           eachServerThing.id
@@ -928,6 +928,7 @@ function updateThingsFromResponse (res) {
 }
 
 function updateLocalPlayersFromResponse (res) {
+  // onsole.log(res);
 
   res.player_info.forEach((ea_server_player, ea_server_player_index) => {
 
@@ -953,12 +954,14 @@ function updateLocalPlayersFromResponse (res) {
       game.players[indexOfClientPlayerMatch].X = ea_server_player.game_x;
       game.players[indexOfClientPlayerMatch].Y = ea_server_player.game_y;
       game.players[indexOfClientPlayerMatch].isLocal = isThisMe;
+      game.players[indexOfClientPlayerMatch].lives = ea_server_player.lives;
     } else if (indexOfClientPlayerMatch > -1 && isThisMe) {
       // if this is the local player,
       // check if the server rejected the last move via rejection flag
       // no point not to update since server didn't update with the move
       // security thing. (to do)      
-      game.players[indexOfClientPlayerMatch].lives = ea_server_player.lives
+      game.players[indexOfClientPlayerMatch].isLocal = isThisMe;
+      game.players[indexOfClientPlayerMatch].lives = ea_server_player.lives;
     } else {
       // if match doesn't exist, add the player
       game.addPlayer(
@@ -985,6 +988,7 @@ function updateLocalPlayersFromResponse (res) {
     }
   });
 }
+
 // sends this player info to server
 function sendGameState () {
   
